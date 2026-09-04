@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>presensicam · edu expo | live camera</title>
+  <!-- Font & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="camera-shell" id="cameraApp">
+    <div class="lens-decoration">
+      <div class="lens-dot">
+        <i class="fas fa-circle-notch"></i>
+      </div>
+      <div class="counter-badge">
+        <i class="fas fa-images"></i> <span id="photoCounter">0/24</span>
+      </div>
+    </div>
+
+    <div class="header-cam">
+      <h1><i class="fas fa-camera-retro"></i> presensicam</h1>
+      <div class="subhead"><i class="fas fa-chevron-right"></i> bidik & jepret · presensi langsung</div>
+    </div>
+
+    <div class="edu-banner">
+      <i class="fas fa-microchip"></i>
+      <span>teknologi pendidikan · hasil foto langsung diunduh</span>
+    </div>
+
+    <!-- LIVE CAMERA VIEW -->
+    <div class="camera-view" id="cameraView">
+      <video id="videoFeed" autoplay playsinline muted></video>
+      <div class="focus-frame"></div>
+      <div class="camera-overlay">
+        <div class="camera-top-bar">
+          <span><i class="fas fa-video"></i> live</span>
+          <span id="cameraStatus"><i class="fas fa-camera"></i> aktif</span>
+        </div>
+        <div class="camera-bottom-bar">presensicam · disposable style</div>
+      </div>
+      <div class="no-camera-msg" id="noCameraMsg" style="display: none;">
+        <i class="fas fa-camera-slash"></i><br>Kamera tidak tersedia<br><small>berikan izin akses kamera</small>
+      </div>
+    </div>
+
+    <!-- RESULT PHOTO (terlihat setelah jepret) -->
+    <div class="captured-result" id="capturedResult">
+      <img id="capturedImage" src="" alt="Hasil jepretan pengunjung">
+      <div class="result-actions">
+        <button class="btn-retake" id="retakeButton"><i class="fas fa-redo-alt"></i> Ulangi</button>
+        <button class="btn-download" id="downloadButton"><i class="fas fa-download"></i> Simpan</button>
+      </div>
+    </div>
+
+    <div class="presence-section">
+      <div class="input-group">
+        <i class="fas fa-user-edit"></i>
+        <input type="text" id="visitorName" placeholder="Nama lengkap / institusi" autocomplete="off">
+      </div>
+      <div class="input-group">
+        <i class="fas fa-graduation-cap"></i>
+        <input type="text" id="visitorRole" placeholder="Peran (guru, siswa, praktisi...)" autocomplete="off">
+      </div>
+
+      <button class="shutter-btn" id="shutterButton">
+        <i class="fas fa-bolt"></i> Jepret & Presensi
+      </button>
+
+      <div class="gallery-strip" id="galleryStrip">
+        <div class="frame-preview empty" id="preview1"><i class="fas fa-image"></i></div>
+        <div class="frame-preview empty" id="preview2"><i class="fas fa-image"></i></div>
+        <div class="frame-preview empty" id="preview3"><i class="fas fa-image"></i></div>
+        <div class="shot-count" id="shotMessage"><i class="far fa-clock"></i> siap memotret</div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      <span><i class="fas fa-wifi"></i> presensi digital</span>
+      <span><i class="fas fa-download"></i> hasil langsung</span>
+    </div>
+  </div>
+
+  <!-- Custom JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
