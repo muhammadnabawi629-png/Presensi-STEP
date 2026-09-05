@@ -3,10 +3,15 @@
   const videoFeed = document.getElementById('videoFeed');
   const cameraView = document.getElementById('cameraView');
   const capturedResult = document.getElementById('capturedResult');
-  const capturedImage = document.getElementById('capturedImage');
-  const retakeButton = document.getElementById('retakeButton');
-  const downloadButton = document.getElementById('downloadButton');
+  const resultGallery = document.getElementById('resultGallery');
+  const emptyGallery = document.getElementById('emptyGallery');
+  const resultCount = document.getElementById('resultCount');
+  const backToCameraBtn = document.getElementById('backToCameraBtn');
+  const downloadAllBtn = document.getElementById('downloadAllBtn');
+  const switchCameraBtn = document.getElementById('switchCameraBtn');
   const shutterButton = document.getElementById('shutterButton');
+  const viewGalleryBtn = document.getElementById('viewGalleryBtn');
+  const galleryCountSpan = document.getElementById('galleryCount');
   const visitorNameInput = document.getElementById('visitorName');
   const visitorRoleInput = document.getElementById('visitorRole');
   const photoCounterSpan = document.getElementById('photoCounter');
@@ -20,13 +25,16 @@
   const MAX_SHOTS = 24;
   let currentShots = 0;
   let stream = null;
-  let capturedPhotoDataUrl = null;
+  let photos = []; // Array untuk menyimpan foto
   let isCameraActive = false;
   let isShutterBusy = false;
+  let currentFacingMode = 'environment'; // Default: kamera belakang
 
   // Update counter & UI
   function updateCounter() {
     photoCounterSpan.textContent = `${currentShots}/${MAX_SHOTS}`;
+    galleryCountSpan.textContent = photos.length;
+    
     if (currentShots >= MAX_SHOTS) {
       shutterButton.disabled = true;
       shutterButton.innerHTML = '<i class="fas fa-hourglass-end"></i> Rol penuh';
@@ -40,11 +48,12 @@
   function updatePreviews() {
     const previews = [preview1, preview2, preview3];
     previews.forEach((preview, index) => {
-      if (currentShots > index) {
+      const photoIndex = photos.length - 1 - index;
+      if (photoIndex >= 0 && photos[photoIndex]) {
         preview.classList.remove('empty');
         preview.classList.add('photo');
-        preview.style.background = 'linear-gradient(145deg, #b8c7dd, #8fa5c4)';
-        preview.innerHTML = '<i class="fas fa-camera" style="color: rgba(0,0,0,0.4);"></i>';
+        preview.innerHTML = `<img src="${photos[photoIndex].dataUrl}" alt="Preview">`;
+        preview.style.background = '';
       } else {
         preview.classList.remove('photo');
         preview.classList.add('empty');
@@ -52,11 +61,45 @@
         preview.innerHTML = '<i class="fas fa-image"></i>';
       }
     });
-    if (currentShots > 0 && currentShots < MAX_SHOTS) {
-      shotMessage.innerHTML = `<i class="fas fa-check"></i> ${currentShots} bidikan tersimpan`;
-    } else if (currentShots === 0) {
+    
+    if (photos.length > 0 && currentShots < MAX_SHOTS) {
+      shotMessage.innerHTML = `<i class="fas fa-check"></i> ${photos.length} bidikan tersimpan`;
+    } else if (photos.length === 0) {
       shotMessage.innerHTML = '<i class="far fa-clock"></i> siap memotret';
     }
+  }
+
+  function updateGallery() {
+    resultGallery.innerHTML = '';
+    
+    if (photos.length === 0) {
+      resultGallery.innerHTML = `
+        <div class="empty-gallery">
+          <i class="fas fa-camera-retro"></i>
+          <p>Belum ada foto</p>
+          <span>Ambil foto untuk melihat hasil</span>
+        </div>
+      `;
+    } else {
+      photos.forEach((photo, index) => {
+        const galleryItem = document.createElement('div');
+        galleryItem.className = 'gallery-item';
+        galleryItem.innerHTML = `
+          <img src="${photo.dataUrl}" alt="Foto ${index + 1}">
+          <div class="gallery-item-actions">
+            <button class="btn-download-photo" onclick="downloadSinglePhoto(${index})" title="Unduh foto">
+              <i class="fas fa-download"></i>
+            </button>
+            <button class="btn-delete-photo" onclick="deletePhoto(${index})" title="Hapus foto">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+          </div>
+        `;
+        resultGallery.appendChild(galleryItem);
+      });
+    }
+    
+    resultCount.textContent = `${photos.length} foto`;
   }
 
   function showCameraView() {
@@ -71,9 +114,10 @@
     }
   }
 
-  function showResultView() {
+  function showGallery() {
     cameraView.style.display = 'none';
     capturedResult.style.display = 'block';
+    updateGallery();
   }
 
   function triggerFlash(element) {
@@ -81,15 +125,33 @@
     setTimeout(() => element.classList.remove('flash'), 200);
   }
 
-  async function startCamera() {
+  async function startCamera(facingMode = 'environment') {
+    // Stop existing stream
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+    }
+    
     try {
       stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 720 } }, 
+        video: { 
+          facingMode: facingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }, 
         audio: false 
       });
       videoFeed.srcObject = stream;
       isCameraActive = true;
-      cameraStatus.innerHTML = '<i class="fas fa-check-circle"></i> aktif';
+      currentFacingMode = facingMode;
+      
+      // Update mirror effect based on camera
+      if (facingMode === 'user') {
+        videoFeed.style.transform = 'scaleX(-1)';
+      } else {
+        videoFeed.style.transform = 'scaleX(1)';
+      }
+      
+      cameraStatus.innerHTML = `<i class="fas fa-check-circle"></i> ${facingMode === 'user' ? 'depan' : 'belakang'}`;
       noCameraMsg.style.display = 'none';
       videoFeed.style.display = 'block';
     } catch (err) {
@@ -101,14 +163,11 @@
     }
   }
 
-  function stopCamera() {
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-      stream = null;
-    }
-    isCameraActive = false;
-    videoFeed.srcObject = null;
-    cameraStatus.innerHTML = '<i class="fas fa-camera"></i> nonaktif';
+  async function switchCamera() {
+    if (isShutterBusy) return;
+    
+    const newFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    await startCamera(newFacingMode);
   }
 
   function capturePhoto() {
@@ -116,13 +175,18 @@
       alert('Kamera belum siap. Mohon izinkan akses kamera.');
       return null;
     }
+    
     const canvas = document.createElement('canvas');
     canvas.width = videoFeed.videoWidth;
     canvas.height = videoFeed.videoHeight;
     const ctx = canvas.getContext('2d');
-    // mirror untuk menyamakan tampilan selfie
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
+    
+    // Mirror hanya jika kamera depan
+    if (currentFacingMode === 'user') {
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+    }
+    
     ctx.drawImage(videoFeed, 0, 0, canvas.width, canvas.height);
     return canvas.toDataURL('image/jpeg', 0.9);
   }
@@ -135,6 +199,29 @@
     a.click();
     document.body.removeChild(a);
   }
+
+  // Global functions untuk gallery
+  window.downloadSinglePhoto = function(index) {
+    if (photos[index]) {
+      downloadPhoto(photos[index].dataUrl, photos[index].name || 'pengunjung');
+    }
+  };
+
+  window.deletePhoto = function(index) {
+    if (index >= 0 && index < photos.length) {
+      photos.splice(index, 1);
+      currentShots = photos.length;
+      updateCounter();
+      updatePreviews();
+      updateGallery();
+      
+      // Show message
+      shotMessage.innerHTML = '<i class="fas fa-trash-alt"></i> Foto dihapus';
+      setTimeout(() => {
+        updatePreviews();
+      }, 1000);
+    }
+  };
 
   // Event handler untuk tombol shutter
   function handleShutter() {
@@ -156,22 +243,26 @@
     shutterButton.disabled = true;
 
     // Ambil foto
-    capturedPhotoDataUrl = capturePhoto();
-    if (!capturedPhotoDataUrl) {
+    const photoDataUrl = capturePhoto();
+    if (!photoDataUrl) {
       isShutterBusy = false;
       shutterButton.disabled = false;
       return;
     }
 
+    // Simpan foto ke array
+    photos.push({
+      dataUrl: photoDataUrl,
+      name: name,
+      role: role,
+      timestamp: new Date().toISOString()
+    });
+
     // Efek flash
     triggerFlash(cameraView);
 
-    // Tampilkan hasil
-    capturedImage.src = capturedPhotoDataUrl;
-    showResultView();
-
     // Update counter & presensi
-    currentShots++;
+    currentShots = photos.length;
     updateCounter();
     updatePreviews();
 
@@ -179,7 +270,7 @@
     visitorNameInput.value = '';
     visitorRoleInput.value = '';
 
-    shotMessage.innerHTML = `<i class="fas fa-check"></i> ${name.split(' ')[0]} terjepret! silakan unduh`;
+    shotMessage.innerHTML = `<i class="fas fa-check"></i> ${name.split(' ')[0]} terjepret!`;
 
     isShutterBusy = false;
     if (currentShots < MAX_SHOTS) {
@@ -187,21 +278,26 @@
     }
   }
 
-  // Event listener
+  // Event listeners
   shutterButton.addEventListener('click', handleShutter);
-
-  retakeButton.addEventListener('click', () => {
-    showCameraView();
-    // jangan reset counter, hanya kembali ke kamera
-  });
-
-  downloadButton.addEventListener('click', () => {
-    if (capturedPhotoDataUrl) {
-      const name = visitorNameInput.value.trim() || 'pengunjung';
-      downloadPhoto(capturedPhotoDataUrl, name);
-    } else {
+  
+  switchCameraBtn.addEventListener('click', switchCamera);
+  
+  viewGalleryBtn.addEventListener('click', showGallery);
+  
+  backToCameraBtn.addEventListener('click', showCameraView);
+  
+  downloadAllBtn.addEventListener('click', () => {
+    if (photos.length === 0) {
       alert('Belum ada foto untuk diunduh.');
+      return;
     }
+    
+    photos.forEach((photo, index) => {
+      setTimeout(() => {
+        downloadPhoto(photo.dataUrl, photo.name || `pengunjung_${index + 1}`);
+      }, index * 300); // Delay untuk mencegah browser memblokir multiple downloads
+    });
   });
 
   visitorRoleInput.addEventListener('keypress', (e) => {
@@ -218,9 +314,9 @@
     }
   });
 
-  // Inisialisasi kamera
+  // Inisialisasi kamera dengan kamera belakang
   async function initCamera() {
-    await startCamera();
+    await startCamera('environment');
     showCameraView();
     updateCounter();
     updatePreviews();
@@ -228,12 +324,12 @@
 
   initCamera();
 
-  // Bersihkan stream saat halaman ditutup (opsional)
+  // Bersihkan stream saat halaman ditutup
   window.addEventListener('beforeunload', () => {
     if (stream) {
       stream.getTracks().forEach(track => track.stop());
     }
   });
 
-  console.log('📸 presensicam live — kamera siap, hasil foto langsung diunduh');
+  console.log('📸 presensicam live — kamera belakang default, fitur ganti kamera aktif');
 })();
