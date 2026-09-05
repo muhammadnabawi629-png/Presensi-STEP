@@ -44,17 +44,32 @@
         </div>
         <div class="camera-bottom-bar">presensicam · disposable style</div>
       </div>
+      <!-- Tombol ganti kamera -->
+      <button class="camera-switch-btn" id="switchCameraBtn" title="Ganti kamera">
+        <i class="fas fa-sync-alt"></i>
+      </button>
       <div class="no-camera-msg" id="noCameraMsg" style="display: none;">
         <i class="fas fa-camera-slash"></i><br>Kamera tidak tersedia<br><small>berikan izin akses kamera</small>
       </div>
     </div>
 
-    <!-- RESULT PHOTO (terlihat setelah jepret) -->
+    <!-- RESULT PHOTO (galeri hasil jepretan) -->
     <div class="captured-result" id="capturedResult">
-      <img id="capturedImage" src="" alt="Hasil jepretan pengunjung">
+      <div class="result-header">
+        <h3><i class="fas fa-images"></i> Hasil Jepretan</h3>
+        <span class="result-count" id="resultCount">0 foto</span>
+      </div>
+      <div class="result-gallery" id="resultGallery">
+        <!-- Galeri foto akan diisi oleh JavaScript -->
+        <div class="empty-gallery" id="emptyGallery">
+          <i class="fas fa-camera-retro"></i>
+          <p>Belum ada foto</p>
+          <span>Ambil foto untuk melihat hasil</span>
+        </div>
+      </div>
       <div class="result-actions">
-        <button class="btn-retake" id="retakeButton"><i class="fas fa-redo-alt"></i> Ulangi</button>
-        <button class="btn-download" id="downloadButton"><i class="fas fa-download"></i> Simpan</button>
+        <button class="btn-back" id="backToCameraBtn"><i class="fas fa-arrow-left"></i> Kembali</button>
+        <button class="btn-download-all" id="downloadAllBtn"><i class="fas fa-download"></i> Unduh Semua</button>
       </div>
     </div>
 
@@ -71,6 +86,9 @@
       <button class="shutter-btn" id="shutterButton">
         <i class="fas fa-bolt"></i> Jepret & Presensi
       </button>
+      <button class="view-gallery-btn" id="viewGalleryBtn">
+        <i class="fas fa-images"></i> Lihat Hasil (<span id="galleryCount">0</span>)
+      </button>
 
       <div class="gallery-strip" id="galleryStrip">
         <div class="frame-preview empty" id="preview1"><i class="fas fa-image"></i></div>
@@ -85,6 +103,11 @@
       <span><i class="fas fa-download"></i> hasil langsung</span>
     </div>
   </div>
+
+  <!-- Custom JavaScript -->
+  <script src="script.js"></script>
+</body>
+</html>
 
   <!-- Custom JavaScript -->
   <script src="script.js"></script>
